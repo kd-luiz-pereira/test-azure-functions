@@ -1,0 +1,36 @@
+pool:
+  name: Azure Pipelines
+  demands: npm
+
+steps:
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build'
+  inputs:
+    projects: '*.csproj'
+    arguments: '--configuration Release --output publish_output'
+
+- task: Npm@1
+  displayName: 'npm install'
+  inputs:
+    workingDir: '$(System.DefaultWorkingDirectory)'
+    verbose: false
+
+- task: ArchiveFiles@2
+  displayName: 'Archive files'
+  inputs:
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)/publish_output'
+    includeRootFolder: false
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact: drop'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+
+- task: AzureFunctionApp@1
+  displayName: 'Azure Function App Deploy: kd-luiz-pereira-funcs'
+  inputs:
+    azureSubscription: 'Free Trial (5b5a3a8a-f273-45c3-bd79-bbf09eda2359)'
+    appType: functionApp
+    appName: 'kd-luiz-pereira-funcs'
+    package: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+
